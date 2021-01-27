@@ -33,6 +33,7 @@
  * Author: Zerom
 *******************************************************************************/
 
+#include <thread>
 #include <ros/ros.h>
 
 #include "std_msgs/String.h"
@@ -117,7 +118,7 @@ int main(int argc, char **argv)
 
   while (ros::ok())
   {
-    usleep(8 * 1000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(8));
 
     ros::spin();
   }
