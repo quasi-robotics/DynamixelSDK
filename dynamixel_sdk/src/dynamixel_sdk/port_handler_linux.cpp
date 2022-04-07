@@ -27,6 +27,7 @@
 #include <sys/time.h>
 #include <sys/ioctl.h>
 #include <linux/serial.h>
+#include <sys/errno.h>
 
 #include "port_handler_linux.h"
 
@@ -200,6 +201,16 @@ bool PortHandlerLinux::setupPort(int cflag_baud)
   // clean the buffer and activate the settings for the port
   tcflush(socket_fd_, TCIFLUSH);
   tcsetattr(socket_fd_, TCSANOW, &newtio);
+
+  struct serial_struct serinfo;
+  serinfo.reserved_char[0] = 0;
+  if( ioctl(socket_fd_, TIOCGSERIAL, &serinfo) >= 0 ) {
+    serinfo.flags |= ASYNC_LOW_LATENCY;
+    if( ioctl(socket_fd_, TIOCSSERIAL, &serinfo) < 0 )
+      return false;
+  }
+  else if( errno != ENOTTY )
+    return false;
 
   tx_time_per_byte = (1000.0 / (double)baudrate_) * 10.0;
   return true;
