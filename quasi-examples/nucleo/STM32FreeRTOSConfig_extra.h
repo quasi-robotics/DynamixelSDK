@@ -1,0 +1,4 @@
+#ifndef _FREERTOS_CONFIG_EXTRA_H
+#define _FREERTOS_CONFIG_EXTRA_H
+#define configMEMMANG_HEAP_NB 3
+#endif
