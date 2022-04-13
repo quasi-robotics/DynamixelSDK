@@ -34,6 +34,7 @@
  * Author: Zerom
 *******************************************************************************/
 
+#include <thread>
 #include <ros/ros.h>
 
 #include "std_msgs/String.h"
