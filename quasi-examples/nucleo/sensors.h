@@ -26,7 +26,6 @@ struct ImuData {
 
 class ImuSensor {
 public:
-  static const uint8_t DATAID=3;
   ImuSensor();
   bool init();
 
@@ -35,7 +34,6 @@ public:
 
 class DistnaceSensor {
 public:
-  static const uint8_t DATAID=2;
   DistnaceSensor();
   bool init();
 

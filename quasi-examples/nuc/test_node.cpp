@@ -6,6 +6,7 @@
 #include "port_handler_ext.h"
 #include "serial_channel.h"
 
+using namespace quasi;
 
 struct Orientation {
   double w;
@@ -40,11 +41,43 @@ std:: ostream& operator<< (std::ostream& os, const ImuData& i) {
   return os;
 }
 
+class HeartBeat {
+public:
+  HeartBeat(SerialChannel& channel, uint8_t dataID, uint16_t interval_ms = 20): 
+    channel_(channel), dataID_(dataID), stop_(false), interval_(interval_ms), beat_(0) {}
+  ~HeartBeat() {
+    if (thread_) {
+      stop_ = true;
+      thread_->join();
+    }
+  }
+
+  void begin() {
+    if (thread_) return;
+    beat_ = 0;
+    thread_ = std::make_unique<std::thread>( [this]{ this->run(); });
+  }
+
+private:
+  void run() {
+    while(!stop_) {
+      channel_.publish(dataID_, beat_++);
+      std::this_thread::sleep_for(std::chrono::milliseconds(interval_));
+    }
+  }
+
+  SerialChannel& channel_;
+  uint8_t dataID_;
+  std::unique_ptr<std::thread> thread_;
+  std::atomic<bool> stop_;
+  uint16_t interval_;
+  uint32_t beat_;
+};
+
+const uint8_t HB_DATAID=1;
 const uint8_t IMU_DATAID = 3;
 const uint8_t DIST_DATAID = 2;
 const uint8_t MELODY_DATAID=5;
-
-using namespace quasi;
 
 int main() {
 
@@ -59,9 +92,9 @@ int main() {
   channel.subscribe<ImuData>(IMU_DATAID, [](const ImuData& value) {
     std::cout << value << std::endl;
   });
+  HeartBeat hb(channel, HB_DATAID);
+  hb.begin();
 
-  std::thread rt([&channel](){channel.run_read();});
-  std::thread wt([&channel](){channel.run_write();});
   int c;
   std::string input;
   while(1) {
@@ -76,8 +109,5 @@ int main() {
   }
   std::cout << "exit" << std::endl;
 
-  channel.stop();
-  rt.join();
-  wt.join();
   return 0;
 }

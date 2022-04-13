@@ -7,6 +7,9 @@
 #include <atomic>
 #include <chrono>
 #include <cstring>
+#include <iostream>
+#include <iomanip>
+
 
 #include <dynamixel_sdk/dynamixel_sdk.h>
 #include "port_handler_ext.h"
@@ -16,18 +19,43 @@ namespace quasi {
 
 using PortHandlerPtr = std::shared_ptr<quasi::PortHandlerLinuxExt>;
 using PacketHandlerPtr = dynamixel::PacketHandler*;
-using Buffer = std::vector<uint8_t>;
 
 class SerialChannel;
-class SubscriptionBase {
+class SubscriptionBase;
+class DataHolder {
 public:
-  explicit SubscriptionBase(uint8_t dataID): data_id_(dataID) {}
-  virtual ~SubscriptionBase() {}
-  uint8_t getID() const { return data_id_; }
+  template<typename Data>
+  DataHolder(uint8_t dataID, const Data& data) : data_(nullptr), len_(sizeof(Data)+1) {
+    data_ = new uint8_t[len_];
+    data_[0] = dataID;
+    std::memcpy(&data_[1], &data, sizeof(Data));
+  }
+  DataHolder(const uint8_t* data, uint16_t len) : len_(len) {
+    data_ = new uint8_t[len_];
+    std::memcpy(data_, data, len_);
+  }
+  inline void destroy() { if(data_) { delete[] data_; } data_ = nullptr; len_ = 0;}
 private:
   friend class SerialChannel;
+  friend class SubscriptionBase;
+  DataHolder() : data_(nullptr), len_(0) {}
+  uint8_t* data_;
+  uint16_t len_;
+};
+
+class SubscriptionBase {
+public:
+  explicit SubscriptionBase(uint8_t dataID);
+  virtual ~SubscriptionBase();
+  inline uint8_t getID() const { return data_id_; }
+  inline bool push(const DataHolder&  dh) { return stop_ ? false : queue_.push(dh); }
+private:
+  void run();
   virtual void execute_callback(uint8_t* data, uint16_t len) = 0;
   uint8_t data_id_;
+  std::unique_ptr<std::thread> callback_thread_;
+  MsgQueue<DataHolder> queue_;
+  std::atomic<bool> stop_;
 };
 
 template<typename Data, typename Callback = std::function<void(const Data&)>>
@@ -41,29 +69,14 @@ private:
     std::memcpy(&msg, data, sizeof(Data));
     callback_(msg);
   }
-  Callback callback_;
-};
-
-class DataHolder {
-public:
-  template<typename Data>
-  explicit DataHolder(uint8_t dataID, const Data& data) : data_(nullptr), len_(sizeof(Data)+1) {
-    data_ = new uint8_t[len_];
-    data_[0] = dataID;
-    std::memcpy(&data_[1], &data, sizeof(Data));
-  }
-  inline void destroy() { if(data_) { delete[] data_; } data_ = nullptr; len_ = 0;}
-private:
-  friend class SerialChannel;
-  DataHolder() : data_(nullptr), len_(0) {}
-  uint8_t* data_;
-  uint16_t len_;
+  Callback callback_;  
 };
 
 class SerialChannel {
 public:
   SerialChannel();
-
+  ~SerialChannel();
+  
   bool begin(const std::string& usb_port, int baud_rate);
 
   template<typename Data>
@@ -73,17 +86,19 @@ public:
   }
 
   template<typename Data, typename Callback = std::function<void(const Data&)>>
-  void subscribe(uint8_t dataID, Callback&& callback) {
+  bool subscribe(uint8_t dataID, Callback&& callback) {
+    if (stop_) return false;
     subscriptions_.push_back(new Subscription<Data,Callback>(dataID, std::move(callback)));
     uint16_t psize = sizeof(Data) + 1;
     if (psize > max_packet_size_) max_packet_size_ = psize;
+    return true;
   }
 
-  void run_read();
-  void run_write();
-  void stop() { stop_ = true; }
+  void stop();
 
 private:
+  void run_read();
+  void run_write();
 
   void execute_subscriptions(uint8_t* data, uint16_t len);
 
@@ -94,6 +109,8 @@ private:
   PacketHandlerPtr packet_;
   std::atomic<bool> stop_;
   std::mutex serial_mutex_;
+  std::unique_ptr<std::thread> read_thread_;
+  std::unique_ptr<std::thread> write_thread_;
 
 };
 

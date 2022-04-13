@@ -86,19 +86,6 @@ namespace quasi {
   };
 
   namespace this_thread {
-    template <class Rep, class Period>
-    inline void sleep_for (const std::chrono::duration<Rep,Period>& __rtime) {
-      if (__rtime <= __rtime.zero())
-        return;
-      auto sec = std::chrono::duration_cast<std::chrono::seconds>(__rtime);
-      auto nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(__rtime - sec);
-      long ms = nsec.count() / 1'000'000;
-      if (sec.count() == 0 && ms == 0 && nsec.count() > 0)
-        ms = 1; // round up to 1 ms => if sleep time != 0, sleep at least 1ms
-
-      vTaskDelay(pdMS_TO_TICKS(std::chrono::milliseconds(sec).count() + ms));
-    }
-
     inline void yield() noexcept { taskYIELD(); }
   }
 }

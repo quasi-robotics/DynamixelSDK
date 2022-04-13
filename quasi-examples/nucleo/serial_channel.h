@@ -9,15 +9,41 @@
 namespace quasi {
 
 class SerialChannel;
-class SubscriptionBase {
+class SubscriptionBase;
+
+class DataHolder {
 public:
-  explicit SubscriptionBase(uint8_t dataID): data_id_(dataID) {}
-  virtual ~SubscriptionBase() {}
-  uint8_t getID() const { return data_id_; }
+  template<typename Data>
+  explicit DataHolder(uint8_t dataID, const Data& data) : data_(nullptr), len_(sizeof(Data)+1) {
+    data_ = new uint8_t[len_];
+    data_[0] = dataID;
+    std::memcpy(&data_[1], &data, sizeof(Data));
+  }
+  DataHolder(const uint8_t* data, uint16_t len) : len_(len) {
+    data_ = new uint8_t[len_];
+    std::memcpy(data_, data, len_);
+  }
+  inline void destroy() { if(data_) { delete[] data_; } data_ = nullptr; len_ = 0;}
 private:
   friend class SerialChannel;
+  friend class SubscriptionBase;
+  DataHolder() : data_(nullptr), len_(0) {}
+  uint8_t* data_;
+  uint16_t len_;
+};
+
+class SubscriptionBase {
+public:
+  explicit SubscriptionBase(uint8_t dataID);
+  virtual ~SubscriptionBase() {}
+  inline uint8_t getID() const { return data_id_; }
+  inline void push(const DataHolder&  dh) { queue_.push(dh); };
+private:
+  void run();
   virtual void execute_callback(uint8_t* data, uint16_t len) = 0;
   uint8_t data_id_;
+  thread* callback_thread_;
+  MsgQueue<DataHolder> queue_;
 };
 
 template<typename Data, typename Callback = std::function<void(const Data&)>>
@@ -32,22 +58,6 @@ private:
     callback_(msg);
   }
   Callback callback_;
-};
-
-class DataHolder {
-public:
-  template<typename Data>
-  explicit DataHolder(uint8_t dataID, const Data& data) : data_(nullptr), len_(sizeof(Data)+1) {
-    data_ = new uint8_t[len_];
-    data_[0] = dataID;
-    std::memcpy(&data_[1], &data, sizeof(Data));
-  }
-  inline void destroy() { if(data_) { delete[] data_; } data_ = nullptr; len_ = 0;}
-private:
-  friend class SerialChannel;
-  DataHolder() : data_(nullptr), len_(0) {}
-  uint8_t* data_;
-  uint16_t len_;
 };
 
 class SerialChannel {

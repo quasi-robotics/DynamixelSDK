@@ -9,12 +9,13 @@ template<typename T>
 class MsgQueue
 {
 public:
-  void push(T const& _data)  {
+  bool push(T const& _data)  {
     {
         std::lock_guard<std::mutex> lock(guard);
         queue.push(_data);
     }
     signal.notify_one();
+    return true;
   }
 
   bool empty() const  {

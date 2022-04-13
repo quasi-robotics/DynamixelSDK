@@ -31,15 +31,14 @@ void MelodyPlayer::play(int melody_idx) {
 void MelodyPlayer::run() {
   Note note;
   while(1) {
-    if (queue_.pop(note, portMAX_DELAY)) {
+    if (queue_.pop(note, 500/portTICK_PERIOD_MS)) {
       uint32_t duration = 1000/note.duration;
       // to distinguish the notes, set a minimum time between them.
       // the note's duration + 30% seems to work well:
       //duration = duration * 1.30;    
       tone(pin_, note.frequency, duration);
-      this_thread::sleep_for(std::chrono::milliseconds(duration));
+      vTaskDelay( duration / portTICK_PERIOD_MS); 
       noTone(pin_);
-      //vTaskDelay( duration / portTICK_PERIOD_MS); 
     } 
   }
 }

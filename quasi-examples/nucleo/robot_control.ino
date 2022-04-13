@@ -12,8 +12,8 @@ using namespace quasi;
 template<typename Sensor>
 class DataProvider {
 public:
-  DataProvider(SerialChannel& channel, uint16_t interval_ms = 20): 
-    channel_(channel), thread_(nullptr), interval_(interval_ms) {}
+  DataProvider(SerialChannel& channel, uint8_t dataID, uint16_t interval_ms = 20): 
+    channel_(channel), dataID_(dataID), thread_(nullptr), interval_(interval_ms) {}
   ~DataProvider() {}
 
   void begin() {
@@ -26,26 +26,30 @@ public:
 private:
   void run() {
     while(true) {
-      channel_.publish(Sensor::DATAID, sensor.getData());
+      channel_.publish(dataID_, sensor.getData());
       vTaskDelay(interval_ / portTICK_PERIOD_MS); 
     }
   }
 
   SerialChannel& channel_;
+  uint8_t dataID_;
   thread* thread_;
   uint16_t interval_;
   Sensor sensor;
 };
 
 
-const uint8_t MELODY_DATAID=5;
+const uint8_t HB_DATAID=1;
+const uint8_t IMU_DATAID = 3;
+const uint8_t DIST_DATAID = 2;
+const uint8_t MELODY_DATAID = 5;
 
 const int BUZZER_PIN = 11;
 static MelodyPlayer player(BUZZER_PIN);
 
 static SerialChannel channel;
-static DataProvider<ImuSensor> imu(channel, 1000);
-static DataProvider<DistnaceSensor> dist(channel, 1000);
+static DataProvider<ImuSensor> imu(channel, IMU_DATAID, 500);
+static DataProvider<DistnaceSensor> dist(channel, DIST_DATAID, 1000);
 
 void setup() {
   DEBUG_begin();
@@ -59,6 +63,11 @@ void setup() {
     DEBUG_printf("Got %d\n", midx);
     player.play(midx);
   });
+
+  channel.subscribe<uint32_t>(HB_DATAID, [](const uint32_t& beat) {
+    DEBUG_printf("HeartBeat %d\n", beat);
+  });
+
   player.begin();
 
   delay(100);
