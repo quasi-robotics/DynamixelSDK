@@ -3,7 +3,8 @@
 using namespace quasi;
 const uint8_t kProtocolVer = 2;
 
-PacketHandler::PacketHandler(DXLPortHandler& port) : port_(port), buf_(DEFAULT_DXL_BUF_LENGTH), id_(0) {
+PacketHandler::PacketHandler(DXLPortHandler& port) : port_(port), 
+  buf_tx_(DEFAULT_DXL_BUF_LENGTH), buf_rx_(DEFAULT_DXL_BUF_LENGTH), id_(0) {
 
   tx_packet_.is_init = false;  
   rx_packet_.is_init = false;
@@ -19,7 +20,7 @@ DXLLibErrorCode_t PacketHandler::txStatusPacket(uint8_t *data, uint16_t data_len
 
   DXLLibErrorCode_t err = DXL_LIB_OK;
   // Send Status Packet
-  err = begin_make_dxl_packet(&tx_packet_, id_, kProtocolVer, DXL_INST_STATUS, err_code, &buf_[0], buf_.size());
+  err = begin_make_dxl_packet(&tx_packet_, id_, kProtocolVer, DXL_INST_STATUS, err_code, &buf_tx_[0], buf_tx_.size());
   if (err != DXL_LIB_OK) return err;
   err = add_param_to_dxl_packet(&tx_packet_, data, data_len);
   if (err != DXL_LIB_OK) return err;
@@ -38,7 +39,7 @@ DXLLibErrorCode_t PacketHandler::rxPacket() {
   if (!port_.getOpenState()) return DXL_LIB_ERROR_PORT_NOT_OPEN;
 
   // Receive Instruction Packet
-  err = begin_parse_dxl_packet(&rx_packet_, kProtocolVer, &buf_[0], buf_.size());
+  err = begin_parse_dxl_packet(&rx_packet_, kProtocolVer, &buf_rx_[0], buf_rx_.size());
   if (err != DXL_LIB_OK) return err;
   err = DXL_LIB_ERROR_TIMEOUT;
   while(port_.available() > 0) {

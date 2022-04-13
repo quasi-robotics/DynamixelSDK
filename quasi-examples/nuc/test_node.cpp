@@ -43,7 +43,7 @@ std:: ostream& operator<< (std::ostream& os, const ImuData& i) {
 
 class HeartBeat {
 public:
-  HeartBeat(SerialChannel& channel, uint8_t dataID, uint16_t interval_ms = 20): 
+  HeartBeat(SerialChannel& channel, uint8_t dataID, uint16_t interval_ms = 200): 
     channel_(channel), dataID_(dataID), stop_(false), interval_(interval_ms), beat_(0) {}
   ~HeartBeat() {
     if (thread_) {

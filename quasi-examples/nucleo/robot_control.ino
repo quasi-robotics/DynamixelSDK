@@ -48,8 +48,8 @@ const int BUZZER_PIN = 11;
 static MelodyPlayer player(BUZZER_PIN);
 
 static SerialChannel channel;
-static DataProvider<ImuSensor> imu(channel, IMU_DATAID, 500);
-static DataProvider<DistnaceSensor> dist(channel, DIST_DATAID, 1000);
+static DataProvider<ImuSensor> imu(channel, IMU_DATAID, 20);
+static DataProvider<DistnaceSensor> dist(channel, DIST_DATAID, 20);
 
 void setup() {
   DEBUG_begin();

@@ -24,7 +24,8 @@ namespace quasi {
   private:
     DXLLibErrorCode_t rxPacket();
 
-    Buffer buf_;
+    Buffer buf_tx_;
+    Buffer buf_rx_;
     DXLPortHandler& port_;
     InfoToMakeDXLPacket_t tx_packet_;
     InfoToParseDXLPacket_t rx_packet_;
