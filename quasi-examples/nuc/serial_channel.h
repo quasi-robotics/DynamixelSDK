@@ -17,7 +17,7 @@
 
 namespace quasi {
 
-using PortHandlerPtr = std::shared_ptr<quasi::PortHandlerLinuxExt>;
+using PortHandlerPtr = std::shared_ptr<quasi::PortHandlerLinux>;
 using PacketHandlerPtr = dynamixel::PacketHandler*;
 
 class SerialChannel;

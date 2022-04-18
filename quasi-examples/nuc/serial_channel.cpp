@@ -44,7 +44,7 @@ SerialChannel::~SerialChannel() {
 
 bool SerialChannel::begin(const std::string& usb_port, int baud_rate) {
   if (port_) return true;
-    port_ = std::make_shared<quasi::PortHandlerLinuxExt>(usb_port.c_str());
+    port_ = std::make_shared<quasi::PortHandlerLinux>(usb_port.c_str());
 
   if (!port_->openPort()) {
     std::cerr << "DynamixelSDKWrapper: Failed to open the port: " << usb_port << std::endl;
