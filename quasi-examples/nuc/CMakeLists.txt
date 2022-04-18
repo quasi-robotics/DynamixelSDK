@@ -24,7 +24,7 @@ include_directories(
 #message(STATUS ${dynamixel_sdk_INCLUDE_DIRS})
 #message(STATUS ${dynamixel_sdk_LIBRARIES})
 
-add_executable(${PROJECT_NAME} test_node.cpp port_handler_ext.cpp serial_channel.cpp)
+add_executable(${PROJECT_NAME} test_node.cpp port_handler_linux.cpp serial_channel.cpp)
 target_link_libraries(${PROJECT_NAME} ${dynamixel_sdk_LIBRARIES} pthread)
 
 add_executable(test_hack test_hack.cpp)

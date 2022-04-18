@@ -3,7 +3,6 @@
 #include <thread>
 
 #include <dynamixel_sdk/dynamixel_sdk.h>
-#include "port_handler_ext.h"
 #include "serial_channel.h"
 
 using namespace quasi;

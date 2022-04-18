@@ -1,17 +1,10 @@
 
 #if defined(__linux__)
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <string.h>
-#include <unistd.h>
-#include <termios.h>
-#include <time.h>
-#include <sys/time.h>
-#include <sys/ioctl.h>
-#include <linux/serial.h>
+#include <cstdio>
+#include <sys/select.h>
 
-#include "port_handler_ext.h"
+#include "port_handler_linux.h"
 
 namespace {
 

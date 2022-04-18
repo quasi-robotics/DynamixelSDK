@@ -12,7 +12,7 @@
 
 
 #include <dynamixel_sdk/dynamixel_sdk.h>
-#include "port_handler_ext.h"
+#include "port_handler_linux.h"
 #include "msg_queue.h"
 
 namespace quasi {
