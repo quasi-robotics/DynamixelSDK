@@ -82,7 +82,7 @@ const uint8_t MELODY_DATAID=5;
 int main() {
 
   SerialChannel channel;
-  if (!channel.begin("/dev/ttyACM0", 1000000) ) {
+  if (!channel.begin("/dev/ttyACM1", 1000000) ) {
     return 1;
   }
 

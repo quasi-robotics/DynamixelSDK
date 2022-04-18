@@ -5,12 +5,14 @@
 #include <vector>
 #include <memory>
 
+#include "port_handler.h"
+
 namespace quasi {
   using Buffer = std::vector<uint8_t>;
 
   class PacketHandler {
   public:
-    PacketHandler(DXLPortHandler& port);
+    PacketHandler(PortHandlerBase& port);
     ~PacketHandler(); 
 
     void setID(uint8_t id) { id_ = id; }
@@ -26,7 +28,7 @@ namespace quasi {
 
     Buffer buf_tx_;
     Buffer buf_rx_;
-    DXLPortHandler& port_;
+    PortHandlerBase& port_;
     InfoToMakeDXLPacket_t tx_packet_;
     InfoToParseDXLPacket_t rx_packet_;
     uint8_t id_;

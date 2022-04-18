@@ -39,6 +39,8 @@ void MelodyPlayer::run() {
       tone(pin_, note.frequency, duration);
       vTaskDelay( duration / portTICK_PERIOD_MS); 
       noTone(pin_);
-    } 
+    // } else {
+    //   DEBUG_SERIAL.println("melody - no notes");
+    }
   }
 }

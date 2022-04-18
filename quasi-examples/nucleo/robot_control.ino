@@ -5,6 +5,7 @@
 #include "melody.h"
 #include "sensors.h"
 #include "serial_channel.h"
+#include "logger.h"
 
 using namespace quasi;
 
@@ -52,26 +53,33 @@ static DataProvider<ImuSensor> imu(channel, IMU_DATAID, 20);
 static DataProvider<DistnaceSensor> dist(channel, DIST_DATAID, 20);
 
 void setup() {
+  SerialUSB.begin(1000000);
   DEBUG_begin();
   delay(1000);
   pinMode(LED_BUILTIN, OUTPUT);
+  DEBUG_println("Starting");
 
-  channel.begin();
+  channel.begin(SerialUSB);
   imu.begin();
   dist.begin();
   channel.subscribe<uint8_t>(MELODY_DATAID, [](const uint8_t& midx) {
     DEBUG_printf("Got %d\n", midx);
     player.play(midx);
+    DEBUG_printf("melody  thread %ld\n", this_thread::get_id());
+
   });
 
   channel.subscribe<uint32_t>(HB_DATAID, [](const uint32_t& beat) {
     DEBUG_printf("HeartBeat %d\n", beat);
+    DEBUG_printf("HB thread %ld\n", this_thread::get_id());
+
   });
 
   player.begin();
 
-  delay(100);
+  delay(2000);
   player.play(MelodyPlayer::ON);
+  DEBUG_printf("setup thread %ld\n", this_thread::get_id());
   vTaskStartScheduler();
 }
 

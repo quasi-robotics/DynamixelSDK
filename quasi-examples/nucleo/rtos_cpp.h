@@ -7,6 +7,7 @@
 #include <functional>
 #include <chrono>
 
+extern void* pxCurrentTCB;
 namespace quasi {
 
   template <class Lockable>
@@ -50,6 +51,16 @@ namespace quasi {
       xTaskCreate(taskFunc, name.c_str(), stackDepth, this, priority, &handle_);
     }
     ~thread() {};
+
+    inline void give_ISR() {
+      BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+      vTaskNotifyGiveFromISR( handle_, &xHigherPriorityTaskWoken );
+      portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+    }
+    inline static uint32_t take(TickType_t waitTicks = portMAX_DELAY) {
+      return ulTaskNotifyTake(pdTRUE, waitTicks);
+    }
+
   private:
     static inline void taskFunc(void *pParams) {
       thread *th = static_cast<thread *>(pParams);
@@ -69,9 +80,9 @@ namespace quasi {
   	explicit MsgQueue(unsigned queueLength) { handle_ = xQueueCreate(queueLength, sizeof(Data)); }    
     inline ~MsgQueue() { vQueueDelete(handle_);}
 
-  	inline bool push(Data const& data, TickType_t time = portMAX_DELAY) { return xQueueSend(handle_, &data, time); }
-	  inline bool pop(Data& data, TickType_t time = portMAX_DELAY) { return xQueueReceive(handle_, &data, time); }
-	  inline bool peek(Data& data, TickType_t time = 0) { return xQueuePeek(handle_, &data, time); }
+  	inline bool push(Data const& data, TickType_t time = 0) { return xQueueSend(handle_, &data, time) == pdPASS; }
+	  inline bool pop(Data& data, TickType_t time = portMAX_DELAY) { return xQueueReceive(handle_, &data, time) == pdPASS; }
+	  inline bool peek(Data& data, TickType_t time = 0) { return xQueuePeek(handle_, &data, time) == pdPASS; }
 
 	  inline unsigned waiting() const { return uxQueueMessagesWaiting(handle_); }
 	  inline unsigned available() const { return uxQueueSpacesAvailable(handle_); }
@@ -86,23 +97,11 @@ namespace quasi {
   };
 
   namespace this_thread {
+    
+    inline uint32_t get_id() { return (uint32_t) pxCurrentTCB; }
+//    inline pxCurrentTCB->uxTCBNumber
     inline void yield() noexcept { taskYIELD(); }
   }
 }
-
-  #define DEBUG_ENABLE 1
-
-#if DEBUG_ENABLE
-  static quasi::mutex debug_mutex;
-  #define DEBUG_begin() { SerialUSB.begin(); }
-  #define DEBUG_printf(...) { lock_guard<mutex> lock(debug_mutex); SerialUSB.printf(__VA_ARGS__); }
-  #define DEBUG_println(x) { lock_guard<mutex> lock(debug_mutex); SerialUSB.println(x); }
-  #define DEBUG_print(x) { lock_guard<mutex> lock(debug_mutex); SerialUSB.print(x); }
-#else
-  #define DEBUG_begin()
-  #define DEBUG_printf(...)
-  #define DEBUG_println(x)
-  #define DEBUG_print(x)
-#endif
 
 #endif //_RTOS_CPP_H

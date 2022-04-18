@@ -3,7 +3,7 @@
 using namespace quasi;
 const uint8_t kProtocolVer = 2;
 
-PacketHandler::PacketHandler(DXLPortHandler& port) : port_(port), 
+PacketHandler::PacketHandler(PortHandlerBase& port) : port_(port), 
   buf_tx_(DEFAULT_DXL_BUF_LENGTH), buf_rx_(DEFAULT_DXL_BUF_LENGTH), id_(0) {
 
   tx_packet_.is_init = false;  
@@ -27,7 +27,7 @@ DXLLibErrorCode_t PacketHandler::txStatusPacket(uint8_t *data, uint16_t data_len
   err = end_make_dxl_packet(&tx_packet_);
   if (err != DXL_LIB_OK) return err;
   size_t sent = port_.write(tx_packet_.p_packet_buf, tx_packet_.generated_packet_length);
-  //SerialUSB.printf("txStatusPacket sent: %d\n", sent);
+  //DEBUG_SERIAL.printf("txStatusPacket sent: %d\n", sent);
   return err;
 }
 
@@ -72,7 +72,7 @@ DXLLibErrorCode_t PacketHandler::rxWritePacket(uint8_t *data, uint16_t data_len)
   uint16_t addr = ((uint16_t)p_rx_param[1]<<8) | (uint16_t)p_rx_param[0];
   uint8_t* r_data = &p_rx_param[2];
   uint16_t r_data_length = rx_packet_.recv_param_len-2;
-  //SerialUSB.printf("Got addr: %d, data_len: %d\n", addr, r_data_length);
+  //DEBUG_SERIAL.printf("Got addr: %d, data_len: %d\n", addr, r_data_length);
   if(r_data_length > data_len){
     return DXL_LIB_ERROR_NOT_ENOUGH_BUFFER_SIZE;
   } else {

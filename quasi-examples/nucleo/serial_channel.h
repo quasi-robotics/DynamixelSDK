@@ -5,6 +5,7 @@
 #include <cstring>
 #include "rtos_cpp.h"
 #include "packet_handler.h"
+#include "port_handler.h"
 
 namespace quasi {
 
@@ -64,7 +65,13 @@ class SerialChannel {
 public:
   SerialChannel();
 
-  void begin();
+  template<typename Device>
+  void begin(Device& port) {
+    if (port_) return;
+    port_ = new PortHandler<Device>(port);
+    port_->begin();
+    init_protocol_threads();
+  }
 
   template<typename Data>
   void publish(uint8_t dataID, const Data& data) {
@@ -80,6 +87,7 @@ public:
   }
 
 private:
+  void init_protocol_threads();
 
   void run_read();
   void run_write();
@@ -88,9 +96,9 @@ private:
   std::vector<SubscriptionBase*> subscriptions_;
   uint16_t max_packet_size_;
   MsgQueue<DataHolder> queue_;
-  DYNAMIXEL::USBSerialPortHandler* port_;
+  PortHandlerBase* port_;
   PacketHandler* packet_;
-  mutex serial_mutex_;
+  //mutex serial_mutex_;
   thread* read_thread_;
   thread* write_thread_;
 

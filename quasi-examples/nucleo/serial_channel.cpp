@@ -1,5 +1,6 @@
 #include "serial_channel.h"
 #include <vector>
+#include "logger.h"
 
 using namespace quasi;
 
@@ -24,14 +25,13 @@ SerialChannel::SerialChannel() : max_packet_size_(0), queue_(10), port_(nullptr)
 
 }
 
-void SerialChannel::begin() {
-  if (port_) return;
-  port_ = new DYNAMIXEL::USBSerialPortHandler(Serial);
+
+void SerialChannel::init_protocol_threads() {
   packet_ = new PacketHandler(*port_);
-  port_->begin();
   packet_->setID(1);
   read_thread_ = new thread("SerialRead", [this]{ this->run_read(); });
   write_thread_ = new thread("SerialWrite", [this]{ this->run_write(); });
+  port_->initReadNotification(*read_thread_);
 }
 
 void SerialChannel::execute_subscriptions(uint8_t* data, uint16_t len) {
@@ -46,16 +46,17 @@ void SerialChannel::execute_subscriptions(uint8_t* data, uint16_t len) {
 void SerialChannel::run_read() {
   Buffer buf(DEFAULT_DXL_BUF_LENGTH);
   while(true) {
+    port_->waitSerialEvent();
     bool ret = true;
     {
       //lock_guard<mutex> lock(serial_mutex_);
       ret = packet_->rxWritePacket(&buf[0], max_packet_size_) == DXL_LIB_OK;
     }
     if (ret) {
-      DEBUG_printf("Got type: %d\n", buf[0]);
+      //DEBUG_printf("Got type: %d\n", buf[0]);
       execute_subscriptions(&buf[0], max_packet_size_);
     }
-    vTaskDelay(5 / portTICK_PERIOD_MS); 
+//    vTaskDelay(5 / portTICK_PERIOD_MS); 
   }
 }
 
@@ -72,6 +73,5 @@ void SerialChannel::run_write() {
       }
       dh.destroy();
     }
-      //vTaskDelay(200 / portTICK_PERIOD_MS); 
   }
 }
