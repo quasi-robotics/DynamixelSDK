@@ -105,6 +105,10 @@ int main() {
       std::cout << "aboout to send : " << (int)midx << std::endl;
       channel.publish(MELODY_DATAID, midx);
     }
+    if (c == '9') {
+      std::cout << "reconnect testing" << std::endl;
+      channel.reconnect("/dev/ttyACM1");
+    }
   }
   std::cout << "exit" << std::endl;
 

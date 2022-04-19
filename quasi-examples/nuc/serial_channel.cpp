@@ -32,38 +32,43 @@ void SubscriptionBase::run() {
 }
 
 
-SerialChannel::SerialChannel() : max_packet_size_(0), packet_(nullptr), stop_(true) {
+SerialChannel::SerialChannel() : max_packet_size_(0), packet_(nullptr), stop_(true), baudrate_(1000000) {
 }
 
 SerialChannel::~SerialChannel() {
   stop();
 }
 
-bool SerialChannel::begin(const std::string& usb_port, int baud_rate) {
+bool SerialChannel::begin(const std::string& usb_port, int baudrate) {
   if (port_) return true;
-    port_ = create_port(usb_port, baud_rate);
-  if (!port_) return false;
-  stop_ = false;
   packet_ = dynamixel::PacketHandler::getPacketHandler();
+  if (!reconnect(usb_port, baudrate)) return false;
+
+  stop_ = false;
   read_thread_ = std::make_unique<std::thread>([this] {this->run_read(); });
   write_thread_ = std::make_unique<std::thread>([this] {this->run_write(); });
   return true;
 }
 
-PortHandlerPtr SerialChannel::create_port(const std::string& usb_port, int baud_rate) {
-  
-  auto port = std::make_unique<quasi::PortHandlerLinux>(usb_port.c_str());
+bool SerialChannel::reconnect(const std::string& usb_port, int baudrate) {
+  if (!packet_) return false; // do nothing if begin has not been called yet
+  auto port = std::make_shared<quasi::PortHandlerLinux>(usb_port.c_str());
 
   if (!port->openPort()) {
     std::cerr << "Failed to open the port: " << usb_port << std::endl;
-    return nullptr;
+    return false;
   }
 
-  if (!port->setBaudRate(baud_rate)) {
-    std::cerr << "DynamixelSDKWrapper: Failed to change the baudrate: " << baud_rate << std::endl;
-    return nullptr;
+  if (!port->setBaudRate(baudrate)) {
+    std::cerr << "Failed to change the baudrate: " << baudrate << std::endl;
+    return false;
   }
-  return port;
+  usb_port_ = usb_port;
+  baudrate_ = baudrate;
+  // port_.reset();
+  // std::this_thread::sleep_for(std::chrono::seconds(3));
+  port_.swap(port);
+  return true;
 }
 
 void SerialChannel::stop() {
@@ -94,21 +99,18 @@ void SerialChannel::execute_subscriptions(uint8_t* data, uint16_t len) {
 void SerialChannel::run_read() {
   Buffer buf(DEFAULT_DXL_BUF_LENGTH);
   uint8_t error;
-  std::string usb_port;
-  int baudrate;
   while (!stop_) {
     if (port_) {
-      PortHandlerLinux::WaitReturn ret = port_->waitForData(1000 /* ms */);
+      PortHandlerPtr port(port_); // make a copy for thread-safety
+      PortHandlerLinux::WaitReturn ret = port->waitForData(1000 /* ms */);
       switch (ret) {
         case PortHandlerLinux::WaitDataReady:
-          if (packet_->readRx(port_.get(), DEVICE_ID, max_packet_size_, &buf[0], &error) == COMM_SUCCESS) {
+          if (packet_->readRx(port.get(), DEVICE_ID, max_packet_size_, &buf[0], &error) == COMM_SUCCESS) {
             execute_subscriptions(&buf[0], max_packet_size_);
           }
           break;
         case PortHandlerLinux::WaitError:
           //exit(100);
-          usb_port = port_->getPortName();
-          baudrate = port_->getBaudRate();
           port_.reset();
           break;
         case PortHandlerLinux::WaitTimeout:
@@ -116,9 +118,10 @@ void SerialChannel::run_read() {
           break;
       }
     } else {
-      auto port = create_port(usb_port, baudrate);
-      if (port) port_.swap(port);
-      else std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      // try to reconnect
+      if (!reconnect(usb_port_, baudrate_)) { 
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      }
     }
   }
   //std::cout << "rt exit" << std::endl;
@@ -128,8 +131,8 @@ void SerialChannel::run_write() {
   DataHolder dh;
   while (!stop_) {
     if ( queue_.pop(dh, std::chrono::milliseconds(200)) && dh.data_) {
-      //std::lock_guard<std::mutex> lock(serial_mutex_);
-      if (port_ && packet_->writeTxOnly(port_.get(), DEVICE_ID, 0, dh.len_, dh.data_) == COMM_SUCCESS) {
+      PortHandlerPtr port(port_); // make a copy for thread-safety
+      if (port && packet_->writeTxOnly(port_.get(), DEVICE_ID, 0, dh.len_, dh.data_) == COMM_SUCCESS) {
           //std::cout << "Sent: " << (int)dh.len_ << "type: " << (int)dh.data_[0] << std::endl;
       }
       dh.destroy();
