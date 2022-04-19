@@ -17,7 +17,7 @@
 
 namespace quasi {
 
-using PortHandlerPtr = std::shared_ptr<quasi::PortHandlerLinux>;
+using PortHandlerPtr = std::unique_ptr<quasi::PortHandlerLinux>;
 using PacketHandlerPtr = dynamixel::PacketHandler*;
 
 class SerialChannel;
@@ -81,6 +81,7 @@ public:
 
   template<typename Data>
   void publish(uint8_t dataID, const Data& data) {
+    if (stop_) return;
     DataHolder dh(dataID, data);
     queue_.push(dh);
   }
@@ -97,6 +98,8 @@ public:
   void stop();
 
 private:
+  PortHandlerPtr create_port(const std::string& usb_port, int baud_rate);
+
   void run_read();
   void run_write();
 

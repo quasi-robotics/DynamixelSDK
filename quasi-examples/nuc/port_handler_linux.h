@@ -13,7 +13,12 @@ class PortHandlerLinux : public dynamixel::PortHandlerLinux {
 public: 
   PortHandlerLinux(const char *port_name): dynamixel::PortHandlerLinux(port_name) {}
 
-  bool    waitForData(double timeout = 1.0); 
+  enum WaitReturn {
+    WaitDataReady = 0,
+    WaitTimeout,
+    WaitError,
+  };
+  WaitReturn waitForData(int timeout = 500 /* ms */); 
 
 };
 
