@@ -8,10 +8,10 @@
 using namespace quasi;
 
 struct Orientation {
-  double w;
-  double x;
-  double y;
-  double z;
+  float w;
+  float x;
+  float y;
+  float z;
 };
 std:: ostream& operator<< (std::ostream& os, const Orientation& o) {
   os << "(w:" << o.w << "x:" << o.x << ", y:" << o.y << ", z:" << o.z << ")";
