@@ -6,6 +6,7 @@
 #include "sensors.h"
 #include "serial_channel.h"
 #include "logger.h"
+#include "pod.h"
 
 using namespace quasi;
 
@@ -40,11 +41,6 @@ private:
 };
 
 
-const uint8_t HB_DATAID=1;
-const uint8_t IMU_DATAID = 3;
-const uint8_t DIST_DATAID = 2;
-const uint8_t MELODY_DATAID = 5;
-
 const int BUZZER_PIN = 11;
 static MelodyPlayer player(BUZZER_PIN);
 
@@ -62,7 +58,7 @@ void setup() {
   channel.begin(SerialUSB);
   imu.begin();
   dist.begin();
-  channel.subscribe<uint8_t>(MELODY_DATAID, [](const uint8_t& midx) {
+  channel.subscribe<uint8_t>(SOUND_DATAID, [](const uint8_t& midx) {
     DEBUG_printf("Got %d\n", midx);
     player.play(midx);
     DEBUG_printf("melody  thread %ld\n", this_thread::get_id());
@@ -70,11 +66,25 @@ void setup() {
   });
 
   channel.subscribe<uint32_t>(HB_DATAID, [](const uint32_t& beat) {
-    DEBUG_printf("HeartBeat %d\n", beat);
-    DEBUG_printf("HB thread %ld\n", this_thread::get_id());
+    // DEBUG_printf("HeartBeat %d\n", beat);
+    // DEBUG_printf("HB thread %ld\n", this_thread::get_id());
 
   });
 
+  channel.subscribe<data::Velocity>(CMDVEL_DATAID, [](const data::Velocity& vel) {
+    DEBUG_printf("HB thread %ld, vel.linear: (", this_thread::get_id());
+    DEBUG_print(vel.linear.x); DEBUG_print(", ");
+    DEBUG_print(vel.linear.y); DEBUG_print(", ");
+    DEBUG_print(vel.linear.z); DEBUG_print(") vel.angular: (");
+    DEBUG_print(vel.angular.x); DEBUG_print(", ");
+    DEBUG_print(vel.angular.y); DEBUG_print(", ");
+    DEBUG_print(vel.angular.z); DEBUG_println(")");
+
+  });
+  channel.subscribe<data::Melody>(MELODY_DATAID, [](const data::Melody& mel) {
+    player.play(mel);
+  });
+  
   player.begin();
 
   delay(2000);

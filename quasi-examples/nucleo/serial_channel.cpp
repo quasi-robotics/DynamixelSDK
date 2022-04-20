@@ -47,16 +47,13 @@ void SerialChannel::run_read() {
   Buffer buf(DEFAULT_DXL_BUF_LENGTH);
   while(true) {
     port_->waitSerialEvent();
-    bool ret = true;
-    {
-      //lock_guard<mutex> lock(serial_mutex_);
-      ret = packet_->rxWritePacket(&buf[0], max_packet_size_) == DXL_LIB_OK;
-    }
-    if (ret) {
+    DXLLibErrorCode_t err = packet_->rxWritePacket(&buf[0], max_packet_size_);
+    if (err == DXL_LIB_OK) {
       //DEBUG_printf("Got type: %d\n", buf[0]);
       execute_subscriptions(&buf[0], max_packet_size_);
+    } else {
+      DEBUG_printf("rxWritePacket err: %d\n", err);
     }
-//    vTaskDelay(5 / portTICK_PERIOD_MS); 
   }
 }
 
@@ -66,7 +63,6 @@ void SerialChannel::run_write() {
     //DEBUG_printf("queue size: %d\n", queue_.waiting());
     if ( queue_.pop(dh, 200/portTICK_PERIOD_MS) && dh.data_) {
       //DEBUG_printf("dh.len_: %d\n", dh.len_);
-      //lock_guard<mutex> lock(serial_mutex_);
       DXLLibErrorCode_t err = packet_->txStatusPacket(dh.data_, dh.len_);
       if (err != DXL_LIB_OK) {
         DEBUG_printf("txStatus err: %d\n", err);

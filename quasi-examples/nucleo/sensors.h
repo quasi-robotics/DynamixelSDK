@@ -2,34 +2,16 @@
 #define _SENSORS_H
 
 #include <Arduino.h>
-
+#include "pod.h"
 namespace quasi {
 
-struct Orientation {
-  double w;
-  double x;
-  double y;
-  double z;
-};
-
-struct Vector3D {
-  float x;
-  float y;
-  float z;
-};
-
-struct ImuData {
-  Orientation orientation;
-  Vector3D linear_acceleration;
-  Vector3D angular_velocity;
-};
 
 class ImuSensor {
 public:
   ImuSensor();
   bool init();
 
-  ImuData getData();
+  data::Imu getData();
 };
 
 class DistnaceSensor {

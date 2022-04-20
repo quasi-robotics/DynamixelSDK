@@ -20,16 +20,33 @@ void MelodyPlayer::begin() {
 }
 
 void MelodyPlayer::play(int melody_idx) {
-  if (!thread_) return;
   if (melody_idx <0 || melody_idx >= melodies_.size() ) return;
+  play(melodies_[melody_idx]);
+}
+
+void MelodyPlayer::play(const data::Note& note) {
+  if (!thread_) return;
   queue_.reset();
-  for( int i = 0; i < melodies_[melody_idx].size(); i++) {
-    queue_.push(melodies_[melody_idx][i]);
+  queue_.push(note);
+}
+void MelodyPlayer::play(const Melody& melody) {
+  if (!thread_) return;
+  queue_.reset();
+  for( int i = 0; i < melody.size(); i++) {
+    queue_.push(melody[i]);
+  }
+}
+
+void MelodyPlayer::play(const data::Melody& melody) {
+  if (!thread_) return;
+  queue_.reset();
+  for( int i = 0; i < melody.size; i++) {
+    queue_.push(melody.notes[i]);
   }
 }
 
 void MelodyPlayer::run() {
-  Note note;
+  data::Note note;
   while(1) {
     if (queue_.pop(note, 500/portTICK_PERIOD_MS)) {
       uint32_t duration = 1000/note.duration;

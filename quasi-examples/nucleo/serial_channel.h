@@ -98,7 +98,6 @@ private:
   MsgQueue<DataHolder> queue_;
   PortHandlerBase* port_;
   PacketHandler* packet_;
-  //mutex serial_mutex_;
   thread* read_thread_;
   thread* write_thread_;
 

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <rtos_cpp.h>
+#include "pod.h"
 
 namespace quasi {
 
@@ -17,12 +18,8 @@ enum Frequency {
   C5 = 523
 };
 
-struct Note {
-  uint16_t frequency;
-  uint8_t duration;
-};
 
-using Melody = std::vector<Note>;
+using Melody = std::vector<data::Note>;
 using Melodies = std::vector<Melody>;
 
 class MelodyPlayer {
@@ -35,12 +32,15 @@ public:
   void begin();
 
   void play(int melody_idx);
+  void play(const data::Note& note);
+  void play(const Melody& melody);
+  void play(const data::Melody& melody);
 
 private:
   void run();
 
   int pin_;
-  MsgQueue<Note> queue_;
+  MsgQueue<data::Note> queue_;
   Melodies melodies_;
   thread* thread_;
 };
