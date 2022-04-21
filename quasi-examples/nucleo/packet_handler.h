@@ -21,7 +21,7 @@ namespace quasi {
 
     DXLLibErrorCode_t txStatusPacket(uint8_t *data, uint16_t data_len, uint8_t err_code = 0);
 
-    DXLLibErrorCode_t rxWritePacket(uint8_t *data, uint16_t data_len);
+    DXLLibErrorCode_t rxWritePacket(uint8_t *data, uint16_t max_data_len, uint16_t& rec_data_len);
 
   private:
     DXLLibErrorCode_t rxPacket();

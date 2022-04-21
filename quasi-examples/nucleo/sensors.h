@@ -19,9 +19,9 @@ public:
   DistnaceSensor();
   bool init();
 
-  float getData();
+  data::Range getData();
 private:
-  float dist_;
+  data::Range range;
 };
 
 

@@ -15,10 +15,10 @@ class SubscriptionBase;
 class DataHolder {
 public:
   template<typename Data>
-  explicit DataHolder(uint8_t dataID, const Data& data) : data_(nullptr), len_(sizeof(Data)+1) {
+  explicit DataHolder(uint16_t dataID, const Data& data) : data_(nullptr), len_(sizeof(Data)+sizeof(uint16_t)) {
     data_ = new uint8_t[len_];
-    data_[0] = dataID;
-    std::memcpy(&data_[1], &data, sizeof(Data));
+    *(uint16_t*)data_ = dataID;
+    std::memcpy(&data_[2], &data, sizeof(Data));
   }
   DataHolder(const uint8_t* data, uint16_t len) : len_(len) {
     data_ = new uint8_t[len_];
@@ -35,14 +35,14 @@ private:
 
 class SubscriptionBase {
 public:
-  explicit SubscriptionBase(uint8_t dataID);
+  explicit SubscriptionBase(uint16_t dataID);
   virtual ~SubscriptionBase() {}
-  inline uint8_t getID() const { return data_id_; }
+  inline uint16_t getID() const { return data_id_; }
   inline void push(const DataHolder&  dh) { queue_.push(dh); };
 private:
   void run();
   virtual void execute_callback(uint8_t* data, uint16_t len) = 0;
-  uint8_t data_id_;
+  uint16_t data_id_;
   thread* callback_thread_;
   MsgQueue<DataHolder> queue_;
 };
@@ -50,7 +50,7 @@ private:
 template<typename Data, typename Callback = std::function<void(const Data&)>>
 class Subscription : public SubscriptionBase {
 public:
-  Subscription(uint8_t dataID, Callback&& callback) : SubscriptionBase(dataID), callback_(std::move(callback)) {}
+  Subscription(uint16_t dataID, Callback&& callback) : SubscriptionBase(dataID), callback_(std::move(callback)) {}
   virtual ~Subscription() {}
 private:
   void execute_callback(uint8_t* data, uint16_t len) override {
@@ -74,16 +74,14 @@ public:
   }
 
   template<typename Data>
-  void publish(uint8_t dataID, const Data& data) {
+  void publish(uint16_t dataID, const Data& data) {
     DataHolder dh(dataID, data);
     queue_.push(dh);
   }
 
   template<typename Data, typename Callback = std::function<void(const Data&)>>
-  void subscribe(uint8_t dataID, Callback&& callback) {
+  void subscribe(uint16_t dataID, Callback&& callback) {
     subscriptions_.push_back(new Subscription<Data,Callback>(dataID, std::move(callback)));
-    uint16_t psize = sizeof(Data) + 1;
-    if (psize > max_packet_size_) max_packet_size_ = psize;
   }
 
 private:
@@ -94,7 +92,6 @@ private:
   void execute_subscriptions(uint8_t* data, uint16_t len);
 
   std::vector<SubscriptionBase*> subscriptions_;
-  uint16_t max_packet_size_;
   MsgQueue<DataHolder> queue_;
   PortHandlerBase* port_;
   PacketHandler* packet_;

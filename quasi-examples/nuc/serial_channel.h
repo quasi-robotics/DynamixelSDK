@@ -25,10 +25,10 @@ class SubscriptionBase;
 class DataHolder {
 public:
   template<typename Data>
-  DataHolder(uint8_t dataID, const Data& data) : data_(nullptr), len_(sizeof(Data)+1) {
+  DataHolder(uint16_t dataID, const Data& data) : data_(nullptr), len_(sizeof(Data)+2) {
     data_ = new uint8_t[len_];
-    data_[0] = dataID;
-    std::memcpy(&data_[1], &data, sizeof(Data));
+    *(uint16_t*)data_ = dataID;
+    std::memcpy(&data_[2], &data, sizeof(Data));
   }
   DataHolder(const uint8_t* data, uint16_t len) : len_(len) {
     data_ = new uint8_t[len_];
@@ -45,14 +45,14 @@ private:
 
 class SubscriptionBase {
 public:
-  explicit SubscriptionBase(uint8_t dataID);
+  explicit SubscriptionBase(uint16_t dataID);
   virtual ~SubscriptionBase();
-  inline uint8_t getID() const { return data_id_; }
+  inline uint16_t getID() const { return data_id_; }
   inline bool push(const DataHolder&  dh) { return stop_ ? false : queue_.push(dh); }
 private:
   void run();
   virtual void execute_callback(uint8_t* data, uint16_t len) = 0;
-  uint8_t data_id_;
+  uint16_t data_id_;
   std::unique_ptr<std::thread> callback_thread_;
   MsgQueue<DataHolder> queue_;
   std::atomic<bool> stop_;
@@ -61,7 +61,7 @@ private:
 template<typename Data, typename Callback = std::function<void(const Data&)>>
 class Subscription : public SubscriptionBase {
 public:
-  Subscription(uint8_t dataID, Callback&& callback) : SubscriptionBase(dataID), callback_(std::move(callback)) {}
+  Subscription(uint16_t dataID, Callback&& callback) : SubscriptionBase(dataID), callback_(std::move(callback)) {}
   virtual ~Subscription() {}
 private:
   void execute_callback(uint8_t* data, uint16_t len) override {
@@ -91,7 +91,7 @@ public:
   bool subscribe(uint8_t dataID, Callback&& callback) {
     if (stop_) return false;
     subscriptions_.push_back(new Subscription<Data,Callback>(dataID, std::move(callback)));
-    uint16_t psize = sizeof(Data) + 1;
+    uint16_t psize = sizeof(Data) + 2;
     if (psize > max_packet_size_) max_packet_size_ = psize;
     return true;
   }

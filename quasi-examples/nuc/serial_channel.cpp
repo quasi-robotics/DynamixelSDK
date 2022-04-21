@@ -10,7 +10,7 @@ using Buffer = std::vector<uint8_t>;
 const size_t DEFAULT_DXL_BUF_LENGTH = 2048;
 const uint8_t DEVICE_ID = 1;
 
-SubscriptionBase::SubscriptionBase(uint8_t dataID): data_id_(dataID), stop_(false) {
+SubscriptionBase::SubscriptionBase(uint16_t dataID): data_id_(dataID), stop_(false) {
   callback_thread_ = std::make_unique<std::thread>([this]{ this->run(); });
 }
 
@@ -88,8 +88,8 @@ void SerialChannel::stop() {
 }
 void SerialChannel::execute_subscriptions(uint8_t* data, uint16_t len) {
   for(auto sub : subscriptions_) {
-    if (data[0] == sub->getID()) {
-      DataHolder dh(&data[1], len-1);
+    if (*(uint16_t*)data == sub->getID()) {
+      DataHolder dh(&data[2], len-2);
 //      std::cout << "dh: " << int(data[0]) << ", len: " << len-1 << std::endl;
       sub->push(dh);
     }

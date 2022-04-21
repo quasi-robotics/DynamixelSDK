@@ -14,7 +14,7 @@ using namespace quasi;
 template<typename Sensor>
 class DataProvider {
 public:
-  DataProvider(SerialChannel& channel, uint8_t dataID, uint16_t interval_ms = 20): 
+  DataProvider(SerialChannel& channel, uint16_t dataID, uint16_t interval_ms = 20): 
     channel_(channel), dataID_(dataID), thread_(nullptr), interval_(interval_ms) {}
   ~DataProvider() {}
 
@@ -34,14 +34,14 @@ private:
   }
 
   SerialChannel& channel_;
-  uint8_t dataID_;
+  uint16_t dataID_;
   thread* thread_;
   uint16_t interval_;
   Sensor sensor;
 };
 
 
-const int BUZZER_PIN = 11;
+const int BUZZER_PIN = PF14;
 static MelodyPlayer player(BUZZER_PIN);
 
 static SerialChannel channel;
@@ -84,7 +84,7 @@ void setup() {
   channel.subscribe<data::Melody>(MELODY_DATAID, [](const data::Melody& mel) {
     player.play(mel);
   });
-  
+
   player.begin();
 
   delay(2000);

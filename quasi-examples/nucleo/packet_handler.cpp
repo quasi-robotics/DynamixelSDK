@@ -1,4 +1,5 @@
 #include "packet_handler.h"
+#include "logger.h"
 
 using namespace quasi;
 const uint8_t kProtocolVer = 2;
@@ -43,6 +44,7 @@ DXLLibErrorCode_t PacketHandler::rxPacket() {
   if (err != DXL_LIB_OK) return err;
   err = DXL_LIB_ERROR_TIMEOUT;
   while(port_.available() > 0) {
+//    DEBUG_printf("port read available %d\n",port_.available());
     err = parse_dxl_packet(&rx_packet_, port_.read());
     if(err == DXL_LIB_OK){
       if(rx_packet_.inst_idx != DXL_INST_STATUS) {
@@ -62,7 +64,7 @@ DXLLibErrorCode_t PacketHandler::rxPacket() {
   return err;
 }
 
-DXLLibErrorCode_t PacketHandler::rxWritePacket(uint8_t *data, uint16_t data_len) {
+DXLLibErrorCode_t PacketHandler::rxWritePacket(uint8_t *data, uint16_t max_data_len, uint16_t& rec_data_len) {
 
   DXLLibErrorCode_t err = rxPacket();
   if (err != DXL_LIB_OK) return err;
@@ -71,12 +73,12 @@ DXLLibErrorCode_t PacketHandler::rxWritePacket(uint8_t *data, uint16_t data_len)
   uint8_t *p_rx_param = rx_packet_.p_param_buf;
   uint16_t addr = ((uint16_t)p_rx_param[1]<<8) | (uint16_t)p_rx_param[0];
   uint8_t* r_data = &p_rx_param[2];
-  uint16_t r_data_length = rx_packet_.recv_param_len-2;
+  rec_data_len = rx_packet_.recv_param_len-2;
   //DEBUG_SERIAL.printf("Got addr: %d, data_len: %d\n", addr, r_data_length);
-  if(r_data_length > data_len){
+  if(rec_data_len > max_data_len){
     return DXL_LIB_ERROR_NOT_ENOUGH_BUFFER_SIZE;
   } else {
-    for(uint16_t i = 0; i < r_data_length; i++ ) {
+    for(uint16_t i = 0; i < rec_data_len; i++ ) {
       data[i] = r_data[i];
     }
   }

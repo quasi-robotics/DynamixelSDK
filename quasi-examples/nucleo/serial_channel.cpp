@@ -6,7 +6,7 @@ using namespace quasi;
 
 using Buffer = std::vector<uint8_t>;
 
-SubscriptionBase::SubscriptionBase(uint8_t dataID): data_id_(dataID), queue_(10) {
+SubscriptionBase::SubscriptionBase(uint16_t dataID): data_id_(dataID), queue_(10) {
     callback_thread_ = new thread("subscriper", [this]{ this->run(); });
 }
 
@@ -21,7 +21,7 @@ void SubscriptionBase::run() {
 }
 
 
-SerialChannel::SerialChannel() : max_packet_size_(0), queue_(10), port_(nullptr), packet_(nullptr), read_thread_(nullptr), write_thread_(nullptr) {
+SerialChannel::SerialChannel(): queue_(10), port_(nullptr), packet_(nullptr), read_thread_(nullptr), write_thread_(nullptr) {
 
 }
 
@@ -36,8 +36,8 @@ void SerialChannel::init_protocol_threads() {
 
 void SerialChannel::execute_subscriptions(uint8_t* data, uint16_t len) {
   for(auto sub : subscriptions_) {
-    if (data[0] == sub->getID()) {
-      DataHolder dh(&data[1], len-1);
+    if (*(uint16_t*)data == sub->getID()) {
+      DataHolder dh(&data[2], len-2);
       sub->push(dh);
     }
   }
@@ -47,10 +47,11 @@ void SerialChannel::run_read() {
   Buffer buf(DEFAULT_DXL_BUF_LENGTH);
   while(true) {
     port_->waitSerialEvent();
-    DXLLibErrorCode_t err = packet_->rxWritePacket(&buf[0], max_packet_size_);
+    uint16_t rec_data_len;
+    DXLLibErrorCode_t err = packet_->rxWritePacket(&buf[0], buf.size(), rec_data_len);
     if (err == DXL_LIB_OK) {
-      //DEBUG_printf("Got type: %d\n", buf[0]);
-      execute_subscriptions(&buf[0], max_packet_size_);
+      //DEBUG_printf("Got type: %d, size: %d\n", buf[0], rec_data_len);
+      execute_subscriptions(&buf[0], rec_data_len);
     } else {
       DEBUG_printf("rxWritePacket err: %d\n", err);
     }

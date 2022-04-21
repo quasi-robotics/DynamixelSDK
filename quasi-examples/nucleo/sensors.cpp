@@ -18,9 +18,10 @@ DistnaceSensor::DistnaceSensor() {
 
 }
 bool DistnaceSensor::init() { 
-  dist_ = -100.0; return true; 
+  range.range = -100.0; return true; 
 }
 
-float DistnaceSensor::getData() { 
-  dist_ += 1.1; return dist_; 
+data::Range DistnaceSensor::getData() { 
+  range.range  += 1.1; 
+  return range; 
 }
