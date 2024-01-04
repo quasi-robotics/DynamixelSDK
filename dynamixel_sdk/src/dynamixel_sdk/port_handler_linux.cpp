@@ -128,7 +128,8 @@ bool PortHandlerLinux::setBaudRate(const int baudrate)
 
   if(baud <= 0)   // custom baudrate
   {
-    setupPort(B38400);
+    if(!setupPort(B38400))
+      return false;
     baudrate_ = baudrate;
     return setCustomBaudrate(baudrate);
   }
@@ -234,6 +235,8 @@ bool PortHandlerLinux::setupPort(int cflag_baud)
   }
   else if( errno != ENOTTY )
     return false;
+
+  ioctl(socket_fd_, TIOCEXCL, NULL);
 
   tx_time_per_byte = (1000.0 / (double)baudrate_) * 10.0;
   return true;
