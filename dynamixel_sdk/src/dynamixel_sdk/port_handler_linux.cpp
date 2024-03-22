@@ -209,7 +209,7 @@ bool PortHandlerLinux::setupPort(int cflag_baud)
   socket_fd_ = open(port_name_, O_RDWR|O_NOCTTY|O_NONBLOCK);
   if(socket_fd_ < 0)
   {
-    printf("[PortHandlerLinux::SetupPort] Error opening serial port!\n");
+    printf("[PortHandlerLinux::SetupPort] Error opening serial port: %s\n", port_name_);
     return false;
   }
 
