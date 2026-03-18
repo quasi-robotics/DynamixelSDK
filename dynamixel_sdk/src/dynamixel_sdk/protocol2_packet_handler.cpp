@@ -475,7 +475,7 @@ int Protocol2PacketHandler::ping(PortHandler *port, uint8_t id, uint16_t *model_
 {
   int result                 = COMM_TX_FAIL;
 
-  uint8_t txpacket[10]        = {0};
+  uint8_t txpacket[12]        = {0};
   uint8_t rxpacket[14]        = {0};
 
   if (id >= BROADCAST_ID)
@@ -503,7 +503,7 @@ int Protocol2PacketHandler::broadcastPing(PortHandler *port, std::vector<uint8_t
   uint16_t rx_length          = 0;
   uint16_t wait_length        = STATUS_LENGTH * MAX_ID;
 
-  uint8_t txpacket[10]        = {0};
+  uint8_t txpacket[12]        = {0};
   uint8_t rxpacket[STATUS_LENGTH * MAX_ID] = {0};
 
   double tx_time_per_byte = (1000.0 / (double)port->getBaudRate()) * 10.0;
@@ -592,7 +592,7 @@ int Protocol2PacketHandler::broadcastPing(PortHandler *port, std::vector<uint8_t
 
 int Protocol2PacketHandler::action(PortHandler *port, uint8_t id)
 {
-  uint8_t txpacket[10]        = {0};
+  uint8_t txpacket[12]        = {0};
 
   txpacket[PKT_ID]            = id;
   txpacket[PKT_LENGTH_L]      = 3;
@@ -604,7 +604,7 @@ int Protocol2PacketHandler::action(PortHandler *port, uint8_t id)
 
 int Protocol2PacketHandler::reboot(PortHandler *port, uint8_t id, uint8_t *error)
 {
-  uint8_t txpacket[10]        = {0};
+  uint8_t txpacket[12]        = {0};
   uint8_t rxpacket[11]        = {0};
 
   txpacket[PKT_ID]            = id;
@@ -635,7 +635,7 @@ int Protocol2PacketHandler::clearMultiTurn(PortHandler *port, uint8_t id, uint8_
 
 int Protocol2PacketHandler::factoryReset(PortHandler *port, uint8_t id, uint8_t option, uint8_t *error)
 {
-  uint8_t txpacket[11]        = {0};
+  uint8_t txpacket[12]        = {0};
   uint8_t rxpacket[11]        = {0};
 
   txpacket[PKT_ID]            = id;
