@@ -215,7 +215,11 @@ bool PortHandlerLinux::setupPort(int cflag_baud)
 
   bzero(&newtio, sizeof(newtio)); // clear struct for new port settings
 
-  newtio.c_cflag = cflag_baud | CS8 | CLOCAL | CREAD;
+  // Set the speed via cfset*speed(): since glibc 2.42 the B* constants equal the numeric
+  // baud rate (B9600 == 9600), so OR-ing them into c_cflag corrupts PARENB etc.
+  newtio.c_cflag = CS8 | CLOCAL | CREAD;
+  cfsetispeed(&newtio, cflag_baud);
+  cfsetospeed(&newtio, cflag_baud);
   newtio.c_iflag = IGNPAR;
   newtio.c_oflag      = 0;
   newtio.c_lflag      = 0;
