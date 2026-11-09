@@ -209,7 +209,7 @@ bool PortHandlerLinux::setupPort(int cflag_baud)
   socket_fd_ = open(port_name_, O_RDWR|O_NOCTTY|O_NONBLOCK);
   if(socket_fd_ < 0)
   {
-    printf("[PortHandlerLinux::SetupPort] Error opening serial port: %s\n", port_name_);
+    printf("[PortHandlerLinux::SetupPort] Error opening serial port: %s: %s (errno %d)\n", port_name_, strerror(errno), errno);
     return false;
   }
 
@@ -234,11 +234,15 @@ bool PortHandlerLinux::setupPort(int cflag_baud)
   serinfo.reserved_char[0] = 0;
   if( ioctl(socket_fd_, TIOCGSERIAL, &serinfo) >= 0 ) {
     serinfo.flags |= ASYNC_LOW_LATENCY;
-    if( ioctl(socket_fd_, TIOCSSERIAL, &serinfo) < 0 )
+    if( ioctl(socket_fd_, TIOCSSERIAL, &serinfo) < 0 ) {
+      printf("[PortHandlerLinux::SetupPort] TIOCSSERIAL failed on %s: %s (errno %d)\n", port_name_, strerror(errno), errno);
       return false;
+    }
   }
-  else if( errno != ENOTTY )
+  else if( errno != ENOTTY ) {
+    printf("[PortHandlerLinux::SetupPort] TIOCGSERIAL failed on %s: %s (errno %d)\n", port_name_, strerror(errno), errno);
     return false;
+  }
 
   ioctl(socket_fd_, TIOCEXCL, NULL);
 
